@@ -35,7 +35,14 @@ class ProductDetailAPIView(APIView):
 
     def put(self, request, pk):
         product = Product.objects.get(pk=pk)
-        serializer = ProductDetailSerializer(product, data=request.data, partial=True)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(serializer.data)
+        if product.pk == request.user:
+            serializer = ProductDetailSerializer(product, data=request.data, partial=True)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(serializer.data)
+        
+        
+    def delete(self, request, pk):
+        product = Product.objects.get(pk=pk)
+        product.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
