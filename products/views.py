@@ -32,3 +32,10 @@ class ProductDetailAPIView(APIView):
         product = Product.objects.get(pk=pk)
         serializer = ProductDetailSerializer(product)
         return Response(serializer.data)
+
+    def put(self, request, pk):
+        product = Product.objects.get(pk=pk)
+        serializer = ProductDetailSerializer(product, data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data)
