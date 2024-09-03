@@ -14,7 +14,7 @@
     - ![로그인 성공](postman/login_success.JPG)
     - ![로그인 실패](postman/login_failure.JPG)
 - 프로필 조회
-    - 기능설명
+    - 현재 로그인한 유저의 정보를 조회할 수 있습니다. 로그인한 경우에만 사용할 수 있습니다.
 ### products
 - 상품등록
     - 기능설명

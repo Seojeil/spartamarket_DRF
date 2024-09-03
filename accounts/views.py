@@ -3,7 +3,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .serializers import SignupSerializer
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import get_user_model
+from .serializers import (
+    SignupSerializer,
+    ProfileSerializer
+    )
+
+
+User = get_user_model()
 
 class SignupAPIView(APIView):
     def post(self, request):
@@ -21,3 +29,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class ProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, username):
+        user = User.objects.get(username=username)
+        account = User.objects.get(pk=user.id)
+        serializer = ProfileSerializer(account)
+        return Response(serializer.data)
