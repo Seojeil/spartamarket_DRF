@@ -4,9 +4,11 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from django.utils.decorators import method_decorator
-from .serializers import ProductSerializer
 from .models import Product
-
+from .serializers import (
+    ProductSerializer,
+    ProductDetailSerializer
+    )
 
 
 class ProductAPIView(APIView):
@@ -21,3 +23,12 @@ class ProductAPIView(APIView):
         if serializer.is_valid(raise_exception=True):
             serializer.save(author=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ProductDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk):
+        product = Product.objects.get(pk=pk)
+        serializer = ProductDetailSerializer(product)
+        return Response(serializer.data)
