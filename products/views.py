@@ -5,10 +5,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from django.utils.decorators import method_decorator
 from .serializers import ProductSerializer
+from .models import Product
 
 
 
 class ProductAPIView(APIView):
+    def get(self, request):
+        products = Product.objects.all()
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data)
     
     @method_decorator(permission_classes([IsAuthenticated]))
     def post(self, request):
