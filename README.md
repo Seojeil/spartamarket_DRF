@@ -10,7 +10,9 @@
     - 새로운 유저의 정보를 등록합니다. username, password, first_name, last_name, nickname, email, birth_day, gender, introduce를 입력받을 수 있으며 gender는 비공개가 가능하고 introduce는 생략가능합니다.
     - ![회원가입](postman/signup.JPG)
 - 로그인
-    - 기능설명
+    - DB에 등록된 회원일 경우 토큰을 발행합니다. 등록되지 않을 회원이거나 비밀번호를 잘못 입력한 경우 지정한 메시지를 출력합니다.
+    - ![로그인 성공](postman/login_success.JPG)
+    - ![로그인 실패](postman/login_failure.JPG)
 - 프로필 조회
     - 기능설명
 ### products
