@@ -7,7 +7,7 @@ class User(AbstractUser):
         ('M', 'Male'),
         ('F', 'Female'),
         ('O', 'Other'),
-    )
+        )
     
     nickname = models.CharField(max_length=50)
     birth_day = models.DateField()
@@ -19,4 +19,3 @@ class User(AbstractUser):
     
     def __str__(self):
         return self.username
-    
