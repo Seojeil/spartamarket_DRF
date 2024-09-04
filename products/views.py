@@ -4,6 +4,8 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from django.utils.decorators import method_decorator
+from django.contrib.auth import get_user_model
+from django.db.models import Q
 from .models import Product
 from .serializers import (
     ProductSerializer,
@@ -23,6 +25,38 @@ class ProductAPIView(APIView):
         if serializer.is_valid(raise_exception=True):
             serializer.save(author=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ProductSearchAPIView(APIView):
+    def get(self, request):
+        category = request.data.get("category") # 프론트엔드에서 입력값을 제한해야함
+        search = request.data.get("search")
+        print(category, search)
+        if category == 'content':
+            products = Product.objects.filter(
+                content__contains=search)
+        elif  category == 'title':
+            products = Product.objects.filter(
+                title__contains=search)
+        elif category == 'title_content':
+            products = Product.objects.filter(
+                Q(title__contains=search) |
+                Q(content__contains=search)
+                )
+        elif category == 'username':
+            User = get_user_model()  # 회원명이 필요하기 때문에 유저모델을 호출
+            try:  # 검색한 데이터와 일치하는 유저명을 호출
+                author = User.objects.get(username=search)
+            except User.DoesNotExist:  # 유저가 존재하지 않을 경우 빈 쿼리 반환
+                products = Product.objects.none()
+            else:  # 유저가 존재할 경우 해당 유저 필터링
+                products = Product.objects.filter(
+                    author=author)
+        else:
+            products = Product.objects.all()
+        
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data)
 
 
 class ProductDetailAPIView(APIView):
