@@ -7,6 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
+from django.contrib.auth.hashers import check_password
 from django.utils.decorators import method_decorator
 from django.contrib.auth import get_user_model
 from .serializers import (
@@ -27,7 +28,10 @@ class SignupAPIView(APIView):
 
     @method_decorator(permission_classes([IsAuthenticated]))
     def delete(self, request):
+        password = request.data.get('password')
         account = User.objects.get(pk=request.user.pk)
+        if not account.check_password(password):
+            return Response({"detail": "비밀번호가 일치하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
         account.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -65,3 +69,13 @@ class ProfileAPIView(APIView):
         account = User.objects.get(pk=user.id)
         serializer = ProfileSerializer(account)
         return Response(serializer.data)
+    
+    def put(self, request, username):
+        account = User.objects.get(username=username)
+        if account.pk ==request.user.pk:
+            serializer = ProfileSerializer(account, data=request.data, partial=True)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(serializer.data)
+        else:
+            return Response({"error": "일치하지 않는 유저입니다."}, status=status.HTTP_400_BAD_REQUEST)
