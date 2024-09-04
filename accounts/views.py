@@ -5,8 +5,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
-from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
+from django.utils.decorators import method_decorator
 from django.contrib.auth import get_user_model
 from .serializers import (
     SignupSerializer,
@@ -24,15 +25,18 @@ class SignupAPIView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @method_decorator(permission_classes([IsAuthenticated]))
+    def delete(self, request):
+        account = User.objects.get(pk=request.user.pk)
+        account.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     default_error_messages = {
         "no_active_account": "아이디/비밀번호를 다시확인해주세요.",
         "already_logged_in": "이미 로그인된 상태입니다.",
     }
-    
-    def validate(self, attrs):
-        data = super().validate(attrs)
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
