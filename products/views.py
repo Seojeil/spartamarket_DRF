@@ -37,25 +37,24 @@ class ProductDetailAPIView(APIView):
         try:
             product = Product.objects.get(pk=pk)
         except Product.DoesNotExist:
-            return Response({"존재하지 않는 글입니다."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "존재하지 않는 글입니다."}, status=status.HTTP_404_NOT_FOUND)
         
         if product.author != request.user:
-            return Response({"작성자가 일치하지 않습니다."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "작성자가 일치하지 않습니다."}, status=status.HTTP_403_FORBIDDEN)
         
         serializer = ProductDetailSerializer(product, data=request.data, partial=True)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(serializer.data)
-        
-        
+
     def delete(self, request, pk):
         try:
             product = Product.objects.get(pk=pk)
         except Product.DoesNotExist:
-            return Response({"존재하지 않는 글입니다."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "존재하지 않는 글입니다."}, status=status.HTTP_404_NOT_FOUND)
         
         if product.author != request.user:
-            return Response({"작성자가 일치하지 않습니다."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "작성자가 일치하지 않습니다."}, status=status.HTTP_403_FORBIDDEN)
         
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
