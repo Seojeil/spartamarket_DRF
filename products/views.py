@@ -29,21 +29,20 @@ class ProductAPIView(APIView):
 
 class ProductSearchAPIView(APIView):
     def get(self, request):
-        category = request.data.get("category") # 프론트엔드에서 입력값을 제한해야함
+        search_type = request.data.get("category") # 프론트엔드에서 입력값을 제한해야함
         search = request.data.get("search")
-        print(category, search)
-        if category == 'content':
+        if search_type == 'content':
             products = Product.objects.filter(
                 content__contains=search)
-        elif  category == 'title':
+        elif  search_type == 'title':
             products = Product.objects.filter(
                 title__contains=search)
-        elif category == 'title_content':
+        elif search_type == 'title_content':
             products = Product.objects.filter(
                 Q(title__contains=search) |
                 Q(content__contains=search)
                 )
-        elif category == 'username':
+        elif search_type == 'username':
             User = get_user_model()  # 회원명이 필요하기 때문에 유저모델을 호출
             try:  # 검색한 데이터와 일치하는 유저명을 호출
                 author = User.objects.get(username=search)
