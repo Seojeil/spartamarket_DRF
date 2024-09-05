@@ -35,6 +35,8 @@ class User(AbstractUser):
     last_name = models.CharField(max_length=150, blank=False, null=False)
     email = models.EmailField(max_length=254, unique=True, blank=False, null=False)
     gender = models.CharField(max_length=1, choices=GENDER_SELECT, default='O')
+    followings = models.ManyToManyField(
+        'self', symmetrical=False, related_name='followers')
     introduce = models.TextField(null=True)
     
     objects = CustomUserManager()
