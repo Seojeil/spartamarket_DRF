@@ -6,6 +6,13 @@ class Category(models.Model):
     category = models.CharField(max_length=50, unique=True)
 
 
+class Tag(models.Model):
+    name = models.CharField(max_length=30, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Product(models.Model):
     title = models.CharField(max_length=200)
     content = models.TextField()
@@ -29,6 +36,12 @@ class Product(models.Model):
     like_users = models.ManyToManyField(
         get_user_model(),
         related_name='like_products',
+    )
+    tags = models.ManyToManyField(
+        Tag,
+        related_name='products',
+        blank=True,
+        null=True,
     )
     
     def __str__(self):
