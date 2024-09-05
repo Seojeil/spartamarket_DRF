@@ -2,7 +2,7 @@
 - 중고거래를 위한 플렛폼인 Spartamarket의 백엔드를 구축하는 과제
 - 지난번 했던 과제와 유사하지만 DRF를 활용해서 백엔드 기능만을 구현해야한다.
 ## ERD
-![ERD](postman/ERD.JPG)
+![ERD](postman/ERD.jpg)
 ## API specification
 ### /accounts
 - Method: POST
