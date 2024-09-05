@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from django.utils.decorators import method_decorator
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from .serializers import (
     AccountSerializer,
     AccountUpdateSerializer,
@@ -35,7 +36,7 @@ class SignupAPIView(APIView):
         if not account.check_password(password):
             return Response({"detail": "비밀번호가 일치하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
         account.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({"detail": "회원정보가 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
 
 # 로그인(토큰 생성)
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -67,16 +68,19 @@ class LogoutAPIView(APIView):
 class ProfileAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
+    def get_object(self, username):
+        return get_object_or_404(User, username=username)
+    
     # 유저페이지 조회
     def get(self, request, username):
-        user = User.objects.get(username=username)
+        user = self.get_object(username)
         account = User.objects.get(pk=user.id)
         serializer = AccountSerializer(account)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     # 팔로우
     def post(self, request, username):
-        user = User.objects.get(username=username)
+        user = self.get_object(username)
         
         if user == request.user:
             return Response({"error": "자신을 팔로우할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
@@ -90,12 +94,12 @@ class ProfileAPIView(APIView):
     
     # 개인정보 수정
     def put(self, request, username):
-        account = User.objects.get(username=username)
+        account = get_object_or_404(User, username=username)
         if account.pk == request.user.pk:
             serializer = AccountUpdateSerializer(account, data=request.data, partial=True)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
-                return Response(serializer.data)
+                return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response({"error": "일치하지 않는 유저입니다."}, status=status.HTTP_400_BAD_REQUEST)
 

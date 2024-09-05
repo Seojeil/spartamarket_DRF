@@ -26,25 +26,17 @@ class ProductAPIView(APIView):
         else:
             products = Product.objects.all().order_by('-created_at')
         serializer = ProductSerializer(products, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     # 게시글 작성
     @method_decorator(permission_classes([IsAuthenticated]))
     def post(self, request):
-        category_data = request.data.get('category')
-        category = get_object_or_404(Category, category=category_data)
-        request.data['category'] = category.pk
+        request.data['category'] = get_category_pk(request)
         
         tags = request.data.get('tags') # 프론트에서 입력값 제한
         tag_instances = []
         if tags:
-            if isinstance(tags, str):
-                tags = tags.split(',')
-            for tag in tags:
-                tag = tag.upper()
-                if tag:
-                    tag_instance, created = Tag.objects.get_or_create(name=tag)
-                    tag_instances.append(tag_instance.pk)
+            append_tags(tags, tag_instances)
         request.data['tags'] = tag_instances
         
         serializer = ProductSerializer(data=request.data)
@@ -85,21 +77,24 @@ class ProductSearchAPIView(APIView):
         
         serializer = ProductSerializer(products, many=True)
         
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ProductDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
+    def get_object(self, pk):
+        return get_object_or_404(Product, pk=pk)
+    
     # 게시글 상세페이지 조회
     def get(self, request, pk):
-        product = get_object_or_404(Product, pk=pk)
+        product = self.get_object(pk)
         serializer = ProductDetailSerializer(product)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     # 좋아요
     def post(self, request, pk):
-        product = get_object_or_404(Product, pk=pk)
+        product = self.get_object(pk)
         
         if product.like_users.filter(pk=request.user.pk).exists():
             product.like_users.remove(request.user)
@@ -111,37 +106,28 @@ class ProductDetailAPIView(APIView):
 
     # 게시글 수정
     def put(self, request, pk):
-        product = get_object_or_404(Product, pk=pk)
-        current_tags = product.tags.all()
+        product = self.get_object(pk)
         
         if product.author != request.user:
             return Response({"error": "작성자가 일치하지 않습니다."}, status=status.HTTP_403_FORBIDDEN)
         
-        category_data = request.data.get('category')
-        category = get_object_or_404(Category, category=category_data)
-        request.data['category'] = category.pk
+        request.data['category'] = get_category_pk(request)
         
         product.tags.clear()
         tags = request.data.get('tags') # 프론트에서 입력값 제한
         tag_instances = []
         if tags:
-            if isinstance(tags, str):
-                tags = tags.split(',')
-            for tag in tags:
-                tag = tag.upper()
-                if tag:
-                    tag_instance, created = Tag.objects.get_or_create(name=tag)
-                    tag_instances.append(tag_instance.pk)
+            append_tags(tags, tag_instances)
         request.data['tags'] = tag_instances
         
         serializer = ProductDetailSerializer(product, data=request.data, partial=True)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
     #게시글 삭제
     def delete(self, request, pk):
-        product = get_object_or_404(Product, pk=pk)
+        product = self.get_object(pk)
         
         if product.author != request.user:
             return Response({"error": "작성자가 일치하지 않습니다."}, status=status.HTTP_403_FORBIDDEN)
@@ -150,3 +136,20 @@ class ProductDetailAPIView(APIView):
         return Response({"detail": "게시글이 삭제되었습니다.."}, status=status.HTTP_204_NO_CONTENT)
 
 
+# 글작성/수정에 포함되는 카테고리 추가 함수
+def get_category_pk(request):
+    category_data = request.data.get('category')
+    category = get_object_or_404(Category, category=category_data)
+    return category.pk
+
+
+# 글작성/수정에 포함되는 태그 추가 함수
+def append_tags(tags, tag_instances):
+    if isinstance(tags, str):
+        tags = tags.split(',')
+    for tag in tags:
+        tag = tag.upper()
+        if tag:
+            tag_instance, created = Tag.objects.get_or_create(name=tag)
+            tag_instances.append(tag_instance.pk)
+    return tag_instances
