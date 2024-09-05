@@ -70,6 +70,19 @@ class ProfileAPIView(APIView):
         serializer = AccountSerializer(account)
         return Response(serializer.data)
     
+    def post(self, request, username):
+        user = User.objects.get(username=username)
+        print(user, request.user)
+        if user != request.user:
+            if user.followers.filter(pk=request.user.pk).exists():
+                user.followers.remove(request.user)
+                return Response({"detail": "팔로우가 취소되었습니다."})
+            else:
+                user.followers.add(request.user)
+                return Response({"detail": "팔로우되었습니다."})
+        else:
+            return Response({"error": "자신을 팔로우할 수 없습니다."})
+    
     def put(self, request, username):
         account = User.objects.get(username=username)
         if account.pk == request.user.pk:
