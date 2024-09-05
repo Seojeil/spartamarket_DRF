@@ -5,8 +5,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import permission_classes
 from django.utils.decorators import method_decorator
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from django.db.models import Q
-from .models import Product
+from .models import Product, Category
 from .serializers import (
     ProductSerializer,
     ProductDetailSerializer
@@ -21,6 +22,9 @@ class ProductAPIView(APIView):
     
     @method_decorator(permission_classes([IsAuthenticated]))
     def post(self, request):
+        category_data = request.data.get('category')
+        category = get_object_or_404(Category, category=category_data)
+        request.data['category'] = category.pk
         serializer = ProductSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save(author=request.user)
@@ -29,7 +33,7 @@ class ProductAPIView(APIView):
 
 class ProductSearchAPIView(APIView):
     def get(self, request):
-        search_type = request.data.get("category") # 프론트엔드에서 입력값을 제한해야함
+        search_type = request.data.get("search_type") # 프론트에서 입력값을 제한해야함
         search = request.data.get("search")
         if search_type == 'content':
             products = Product.objects.filter(
@@ -51,6 +55,9 @@ class ProductSearchAPIView(APIView):
             else:  # 유저가 존재할 경우 해당 유저 필터링
                 products = Product.objects.filter(
                     author=author)
+        elif search_type == 'category':
+            category = get_object_or_404(Category, category=search)
+            products = Product.objects.filter(category=category.pk)
         else:
             products = Product.objects.all()
         
@@ -74,6 +81,10 @@ class ProductDetailAPIView(APIView):
         
         if product.author != request.user:
             return Response({"error": "작성자가 일치하지 않습니다."}, status=status.HTTP_403_FORBIDDEN)
+        
+        category_data = request.data.get('category')
+        category = get_object_or_404(Category, category=category_data)
+        request.data['category'] = category.pk
         
         serializer = ProductDetailSerializer(product, data=request.data, partial=True)
         if serializer.is_valid(raise_exception=True):
