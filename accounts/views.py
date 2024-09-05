@@ -11,6 +11,7 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth import get_user_model
 from .serializers import (
     AccountSerializer,
+    AccountUpdateSerializer,
     PasswordSerializer,
     )
 from datetime import datetime
@@ -72,7 +73,7 @@ class ProfileAPIView(APIView):
     def put(self, request, username):
         account = User.objects.get(username=username)
         if account.pk == request.user.pk:
-            serializer = AccountSerializer(account, data=request.data, partial=True)
+            serializer = AccountUpdateSerializer(account, data=request.data, partial=True)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 return Response(serializer.data)
