@@ -20,12 +20,14 @@ from datetime import datetime
 User = get_user_model()
 
 class SignupAPIView(APIView):
+    # 회원가입
     def post(self, request):
         serializer = AccountSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    # 회원 탈퇴
     @method_decorator(permission_classes([IsAuthenticated]))
     def delete(self, request):
         password = request.data.get('password')
@@ -35,7 +37,7 @@ class SignupAPIView(APIView):
         account.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
+# 로그인(토큰 생성)
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     default_error_messages = {
         "no_active_account": "아이디/비밀번호를 다시확인해주세요.",
@@ -50,6 +52,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class LogoutAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
+    # 로그아웃
     def post(self, request):
         refresh_token  = request.data.get("refresh")
         
@@ -64,15 +67,17 @@ class LogoutAPIView(APIView):
 class ProfileAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
+    # 유저페이지 조회
     def get(self, request, username):
         user = User.objects.get(username=username)
         account = User.objects.get(pk=user.id)
         serializer = AccountSerializer(account)
         return Response(serializer.data)
     
+    # 팔로우
     def post(self, request, username):
         user = User.objects.get(username=username)
-        print(user, request.user)
+        
         if user == request.user:
             return Response({"error": "자신을 팔로우할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -83,6 +88,7 @@ class ProfileAPIView(APIView):
             user.followers.add(request.user)
             return Response({"detail": "팔로우되었습니다."}, status=status.HTTP_200_OK)
     
+    # 개인정보 수정
     def put(self, request, username):
         account = User.objects.get(username=username)
         if account.pk == request.user.pk:
@@ -97,6 +103,7 @@ class ProfileAPIView(APIView):
 class PasswordUpdateAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
+    # 비밀번호 수정
     def put(self, request):
         serializer = PasswordSerializer(data=request.data, context={'request': request})
         if serializer.is_valid(raise_exception=True):

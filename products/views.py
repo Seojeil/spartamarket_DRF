@@ -6,7 +6,7 @@ from rest_framework.decorators import permission_classes
 from django.utils.decorators import method_decorator
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Count
 from .models import Product, Category
 from .serializers import (
     ProductSerializer,
@@ -15,11 +15,20 @@ from .serializers import (
 
 
 class ProductAPIView(APIView):
+    # 게시글 목록
     def get(self, request):
-        products = Product.objects.all()
+        sort = request.data.get('sort') # 프론트에서 입력값 제한
+        
+        if sort == 'like':
+            products = Product.objects.annotate(
+                like_count=Count('like_users')
+                ).order_by('-like_count', '-created_at')
+        else:
+            products = Product.objects.all().order_by('-created_at')
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data)
     
+    # 게시글 작성
     @method_decorator(permission_classes([IsAuthenticated]))
     def post(self, request):
         category_data = request.data.get('category')
@@ -32,20 +41,22 @@ class ProductAPIView(APIView):
 
 
 class ProductSearchAPIView(APIView):
+    # 게시글 검색
     def get(self, request):
         search_type = request.data.get("search_type") # 프론트에서 입력값을 제한해야함
         search = request.data.get("search")
+        
         if search_type == 'content':
             products = Product.objects.filter(
-                content__contains=search)
+                content__contains=search).order_by('-created_at')
         elif  search_type == 'title':
             products = Product.objects.filter(
-                title__contains=search)
+                title__contains=search).order_by('-created_at')
         elif search_type == 'title_content':
             products = Product.objects.filter(
                 Q(title__contains=search) |
                 Q(content__contains=search)
-                )
+                ).order_by('-created_at')
         elif search_type == 'username':
             User = get_user_model()  # 회원명이 필요하기 때문에 유저모델을 호출
             try:  # 검색한 데이터와 일치하는 유저명을 호출
@@ -54,25 +65,28 @@ class ProductSearchAPIView(APIView):
                 products = Product.objects.none()
             else:  # 유저가 존재할 경우 해당 유저 필터링
                 products = Product.objects.filter(
-                    author=author)
+                    author=author).order_by('-created_at')
         elif search_type == 'category':
             category = get_object_or_404(Category, category=search)
-            products = Product.objects.filter(category=category.pk)
+            products = Product.objects.filter(category=category.pk).order_by('-created_at')
         else:
-            products = Product.objects.all()
+            products = Product.objects.all().order_by('-created_at')
         
         serializer = ProductSerializer(products, many=True)
+        
         return Response(serializer.data)
 
 
 class ProductDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
+    # 게시글 상세페이지 조회
     def get(self, request, pk):
         product = get_object_or_404(Product, pk=pk)
         serializer = ProductDetailSerializer(product)
         return Response(serializer.data)
 
+    # 좋아요
     def post(self, request, pk):
         product = get_object_or_404(Product, pk=pk)
         
@@ -84,7 +98,7 @@ class ProductDetailAPIView(APIView):
             product.save()
             return Response({"detail": "이 상품이 좋아요!"}, status=status.HTTP_200_OK)
 
-
+    # 게시글 수정
     def put(self, request, pk):
         product = get_object_or_404(Product, pk=pk)
         
@@ -100,11 +114,9 @@ class ProductDetailAPIView(APIView):
             serializer.save()
             return Response(serializer.data)
 
+    #게시글 삭제
     def delete(self, request, pk):
-        try:
-            product = Product.objects.get(pk=pk)
-        except Product.DoesNotExist:
-            return Response({"error": "존재하지 않는 글입니다."}, status=status.HTTP_404_NOT_FOUND)
+        product = get_object_or_404(Product, pk=pk)
         
         if product.author != request.user:
             return Response({"error": "작성자가 일치하지 않습니다."}, status=status.HTTP_403_FORBIDDEN)
