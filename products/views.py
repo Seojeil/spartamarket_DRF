@@ -69,15 +69,24 @@ class ProductDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, pk):
-        product = Product.objects.get(pk=pk)
+        product = get_object_or_404(Product, pk=pk)
         serializer = ProductDetailSerializer(product)
         return Response(serializer.data)
 
+    def post(self, request, pk):
+        product = get_object_or_404(Product, pk=pk)
+        
+        if product.like_users.filter(pk=request.user.pk).exists():
+            product.like_users.remove(request.user)
+            return Response({"detail": "좋아요가 취소되었습니다."}, status=status.HTTP_200_OK)
+        else:
+            product.like_users.add(request.user)
+            product.save()
+            return Response({"detail": "이 상품이 좋아요!"}, status=status.HTTP_200_OK)
+
+
     def put(self, request, pk):
-        try:
-            product = Product.objects.get(pk=pk)
-        except Product.DoesNotExist:
-            return Response({"error": "존재하지 않는 글입니다."}, status=status.HTTP_404_NOT_FOUND)
+        product = get_object_or_404(Product, pk=pk)
         
         if product.author != request.user:
             return Response({"error": "작성자가 일치하지 않습니다."}, status=status.HTTP_403_FORBIDDEN)
@@ -101,4 +110,4 @@ class ProductDetailAPIView(APIView):
             return Response({"error": "작성자가 일치하지 않습니다."}, status=status.HTTP_403_FORBIDDEN)
         
         product.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({"detail": "게시글이 삭제되었습니다.."}, status=status.HTTP_204_NO_CONTENT)

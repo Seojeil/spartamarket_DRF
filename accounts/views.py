@@ -73,15 +73,15 @@ class ProfileAPIView(APIView):
     def post(self, request, username):
         user = User.objects.get(username=username)
         print(user, request.user)
-        if user != request.user:
-            if user.followers.filter(pk=request.user.pk).exists():
-                user.followers.remove(request.user)
-                return Response({"detail": "팔로우가 취소되었습니다."})
-            else:
-                user.followers.add(request.user)
-                return Response({"detail": "팔로우되었습니다."})
+        if user == request.user:
+            return Response({"error": "자신을 팔로우할 수 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if user.followers.filter(pk=request.user.pk).exists():
+            user.followers.remove(request.user)
+            return Response({"detail": "팔로우가 취소되었습니다."}, status=status.HTTP_200_OK)
         else:
-            return Response({"error": "자신을 팔로우할 수 없습니다."})
+            user.followers.add(request.user)
+            return Response({"detail": "팔로우되었습니다."}, status=status.HTTP_200_OK)
     
     def put(self, request, username):
         account = User.objects.get(username=username)

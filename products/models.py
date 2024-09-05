@@ -26,6 +26,10 @@ class Product(models.Model):
         on_delete=models.CASCADE,
         related_name='products'
         )
+    like_users = models.ManyToManyField(
+        get_user_model(),
+        related_name='like_products',
+    )
     
     def __str__(self):
         return self.title
