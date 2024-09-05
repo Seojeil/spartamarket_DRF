@@ -15,7 +15,6 @@ from .serializers import (
     AccountUpdateSerializer,
     PasswordSerializer,
     )
-from datetime import datetime
 
 
 User = get_user_model()
@@ -24,6 +23,7 @@ class SignupAPIView(APIView):
     # 회원가입
     def post(self, request):
         serializer = AccountSerializer(data=request.data)
+        
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -33,6 +33,7 @@ class SignupAPIView(APIView):
     def delete(self, request):
         password = request.data.get('password')
         account = request.user
+        
         if not account.check_password(password):
             return Response({"detail": "비밀번호가 일치하지 않습니다."}, status=status.HTTP_400_BAD_REQUEST)
         account.delete()
@@ -95,6 +96,7 @@ class ProfileAPIView(APIView):
     # 개인정보 수정
     def put(self, request, username):
         account = get_object_or_404(User, username=username)
+        
         if account.pk == request.user.pk:
             serializer = AccountUpdateSerializer(account, data=request.data, partial=True)
             if serializer.is_valid(raise_exception=True):
@@ -110,8 +112,10 @@ class PasswordUpdateAPIView(APIView):
     # 비밀번호 수정
     def put(self, request):
         serializer = PasswordSerializer(data=request.data, context={'request': request})
+        
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response({"detail": "비밀번호가 성공적으로 변경되었습니다."}, status=status.HTTP_200_OK)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

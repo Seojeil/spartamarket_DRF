@@ -25,6 +25,7 @@ class ProductAPIView(APIView):
                 ).order_by('-like_count', '-created_at')
         else:
             products = Product.objects.all().order_by('-created_at')
+        
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
@@ -35,11 +36,13 @@ class ProductAPIView(APIView):
         
         tags = request.data.get('tags') # 프론트에서 입력값 제한
         tag_instances = []
+        
         if tags:
             append_tags(tags, tag_instances)
         request.data['tags'] = tag_instances
         
         serializer = ProductSerializer(data=request.data)
+        
         if serializer.is_valid(raise_exception=True):
             serializer.save(author=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -112,15 +115,17 @@ class ProductDetailAPIView(APIView):
             return Response({"error": "작성자가 일치하지 않습니다."}, status=status.HTTP_403_FORBIDDEN)
         
         request.data['category'] = get_category_pk(request)
-        
         product.tags.clear()
+        
         tags = request.data.get('tags') # 프론트에서 입력값 제한
         tag_instances = []
+        
         if tags:
             append_tags(tags, tag_instances)
         request.data['tags'] = tag_instances
         
         serializer = ProductDetailSerializer(product, data=request.data, partial=True)
+        
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
