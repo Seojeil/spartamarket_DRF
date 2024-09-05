@@ -7,7 +7,7 @@ from django.utils.decorators import method_decorator
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.db.models import Q, Count
-from .models import Product, Category
+from .models import Product, Category, Tag
 from .serializers import (
     ProductSerializer,
     ProductDetailSerializer
@@ -34,6 +34,19 @@ class ProductAPIView(APIView):
         category_data = request.data.get('category')
         category = get_object_or_404(Category, category=category_data)
         request.data['category'] = category.pk
+        
+        tags = request.data.get('tags') # 프론트에서 입력값 제한
+        tag_instances = []
+        if tags:
+            if isinstance(tags, str):
+                tags = tags.split(',')
+            for tag in tags:
+                tag = tag.upper()
+                if tag:
+                    tag_instance, created = Tag.objects.get_or_create(name=tag)
+                    tag_instances.append(tag_instance.pk)
+        request.data['tags'] = tag_instances
+        
         serializer = ProductSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save(author=request.user)
@@ -58,17 +71,15 @@ class ProductSearchAPIView(APIView):
                 Q(content__contains=search)
                 ).order_by('-created_at')
         elif search_type == 'username':
-            User = get_user_model()  # 회원명이 필요하기 때문에 유저모델을 호출
-            try:  # 검색한 데이터와 일치하는 유저명을 호출
-                author = User.objects.get(username=search)
-            except User.DoesNotExist:  # 유저가 존재하지 않을 경우 빈 쿼리 반환
-                products = Product.objects.none()
-            else:  # 유저가 존재할 경우 해당 유저 필터링
-                products = Product.objects.filter(
-                    author=author).order_by('-created_at')
+            author = get_object_or_404(get_user_model(), username=search)
+            products = Product.objects.filter(author=author).order_by('-created_at')
         elif search_type == 'category':
             category = get_object_or_404(Category, category=search)
             products = Product.objects.filter(category=category.pk).order_by('-created_at')
+        elif search_type == 'tags':
+            search = search.upper()
+            tag = get_object_or_404(Tag, name=search)
+            products = Product.objects.filter(tags=tag.pk).order_by('-created_at')
         else:
             products = Product.objects.all().order_by('-created_at')
         
@@ -101,6 +112,7 @@ class ProductDetailAPIView(APIView):
     # 게시글 수정
     def put(self, request, pk):
         product = get_object_or_404(Product, pk=pk)
+        current_tags = product.tags.all()
         
         if product.author != request.user:
             return Response({"error": "작성자가 일치하지 않습니다."}, status=status.HTTP_403_FORBIDDEN)
@@ -108,6 +120,19 @@ class ProductDetailAPIView(APIView):
         category_data = request.data.get('category')
         category = get_object_or_404(Category, category=category_data)
         request.data['category'] = category.pk
+        
+        product.tags.clear()
+        tags = request.data.get('tags') # 프론트에서 입력값 제한
+        tag_instances = []
+        if tags:
+            if isinstance(tags, str):
+                tags = tags.split(',')
+            for tag in tags:
+                tag = tag.upper()
+                if tag:
+                    tag_instance, created = Tag.objects.get_or_create(name=tag)
+                    tag_instances.append(tag_instance.pk)
+        request.data['tags'] = tag_instances
         
         serializer = ProductDetailSerializer(product, data=request.data, partial=True)
         if serializer.is_valid(raise_exception=True):
@@ -123,3 +148,5 @@ class ProductDetailAPIView(APIView):
         
         product.delete()
         return Response({"detail": "게시글이 삭제되었습니다.."}, status=status.HTTP_204_NO_CONTENT)
+
+
