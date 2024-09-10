@@ -39,6 +39,7 @@ class SignupAPIView(APIView):
         account.delete()
         return Response({"detail": "회원정보가 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
 
+
 # 로그인(토큰 생성)
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     default_error_messages = {
