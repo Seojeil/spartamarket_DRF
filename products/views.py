@@ -39,8 +39,8 @@ class ProductAPIView(APIView):
         
         if tags:
             append_tags(tags, tag_instances)
+            
         request.data['tags'] = tag_instances
-        
         serializer = ProductSerializer(data=request.data)
         
         if serializer.is_valid(raise_exception=True):
@@ -57,24 +57,30 @@ class ProductSearchAPIView(APIView):
         if search_type == 'content':
             products = Product.objects.filter(
                 content__contains=search).order_by('-created_at')
+            
         elif  search_type == 'title':
             products = Product.objects.filter(
                 title__contains=search).order_by('-created_at')
+            
         elif search_type == 'title_content':
             products = Product.objects.filter(
                 Q(title__contains=search) |
                 Q(content__contains=search)
                 ).order_by('-created_at')
+            
         elif search_type == 'username':
             author = get_object_or_404(get_user_model(), username=search)
             products = Product.objects.filter(author=author).order_by('-created_at')
+            
         elif search_type == 'category':
             category = get_object_or_404(Category, category=search)
             products = Product.objects.filter(category=category.pk).order_by('-created_at')
+        
         elif search_type == 'tags':
             search = search.upper()
             tag = get_object_or_404(Tag, name=search)
             products = Product.objects.filter(tags=tag.pk).order_by('-created_at')
+        
         else:
             products = Product.objects.all().order_by('-created_at')
         
@@ -122,8 +128,8 @@ class ProductDetailAPIView(APIView):
         
         if tags:
             append_tags(tags, tag_instances)
-        request.data['tags'] = tag_instances
         
+        request.data['tags'] = tag_instances
         serializer = ProductDetailSerializer(product, data=request.data, partial=True)
         
         if serializer.is_valid(raise_exception=True):
@@ -152,6 +158,7 @@ def get_category_pk(request):
 def append_tags(tags, tag_instances):
     if isinstance(tags, str):
         tags = tags.split(',')
+    
     for tag in tags:
         tag = tag.upper()
         if tag:
